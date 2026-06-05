@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="my">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>အကောင့်အရောင်းအဝယ် - John Gaming Shop</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        :root { --bg-color: #0a0f1e; --glass-bg: rgba(255, 255, 255, 0.05); --neon-cyan: #00ffe7; --neon-blue: #3b82f6; --text-color: #ffffff; }
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Pyidaungsu', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        body { background: radial-gradient(circle at 20% 30%, #0a0f1e, #020408); min-height: 100vh; color: var(--text-color); padding-bottom: 20px; }
+        header { background: var(--glass-bg); backdrop-filter: blur(10px); padding: 20px; display: flex; align-items: center; gap: 15px; border-bottom: 1px solid rgba(0, 255, 231, 0.2); position: sticky; top: 0; z-index: 100; }
+        .back-btn { color: white; text-decoration: none; font-size: 20px; }
+        .account-grid { display: grid; grid-template-columns: 1fr; gap: 20px; padding: 20px; }
+        .acc-card { background: var(--glass-bg); border: 1px solid rgba(255,255,255,0.1); border-radius: 20px; overflow: hidden; }
+        .acc-img { width: 100%; height: 200px; background-size: cover; background-position: center; }
+        .acc-info { padding: 20px; }
+        .acc-game { color: var(--neon-cyan); font-size: 12px; font-weight: bold; margin-bottom: 5px; }
+        .acc-name { font-size: 18px; margin-bottom: 10px; }
+        .acc-desc { font-size: 14px; color: rgba(255,255,255,0.7); margin-bottom: 15px; }
+        .acc-footer { display: flex; justify-content: space-between; align-items: center; }
+        .acc-price { font-size: 20px; font-weight: bold; color: var(--neon-cyan); }
+        .buy-btn { background: linear-gradient(90deg, var(--neon-cyan), var(--neon-blue)); border: none; padding: 10px 20px; border-radius: 40px; color: #000; font-weight: bold; cursor: pointer; }
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); backdrop-filter: blur(5px); z-index: 1000; align-items: center; justify-content: center; padding: 20px; }
+        .modal-content { background: #0a0f1e; border: 1px solid var(--neon-cyan); border-radius: 30px; padding: 30px; width: 100%; max-width: 400px; text-align: center; }
+        .input-group { margin-bottom: 15px; text-align: left; }
+        label { display: block; margin-bottom: 8px; font-size: 14px; }
+        input { width: 100%; padding: 12px 20px; background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 40px; color: white; outline: none; }
+        .toast { position: fixed; top: 20px; right: 20px; background: var(--glass-bg); backdrop-filter: blur(10px); border: 1px solid var(--neon-cyan); padding: 15px 25px; border-radius: 10px; display: none; z-index: 2000; }
+    </style>
+</head>
+<body>
+    <header><a href="index.html" class="back-btn"><i class="fas fa-arrow-left"></i></a><h2>ဂိမ်းအကောင့်များ</h2></header>
+    <div class="account-grid" id="acc-grid"></div>
+    <div id="buy-modal" class="modal"><div class="modal-content"><h3>ဝယ်ယူရန် အတည်ပြုပါ</h3><p id="modal-acc-name" style="margin:10px 0;"></p><div class="input-group"><label>Telegram သို့မဟုတ် ဖုန်းနံပါတ်</label><input type="text" id="contact" placeholder="ဆက်သွယ်ရန်..."></div><button class="buy-btn" style="width:100%;" onclick="confirmBuy()">ဝယ်ယူမည်</button><button class="buy-btn" style="width:100%; margin-top:10px; background:none; color:white;" onclick="closeModal()">ပိတ်ရန်</button></div></div>
+    <div id="toast" class="toast"></div>
+    <script>
+        const supabaseUrl = 'https://obtfamhkvsodmrfjetsm.supabase.co';
+        const supabaseKey = 'sb_publishable_KpHT5E9yRy9y1jkDZN9RAg_WHBJMDj9';
+        const supabase = supabase.createClient(supabaseUrl, supabaseKey);
+        let selectedAcc = null;
+        async function loadAccounts() {
+            const { data } = await supabase.from('accounts').select('*').eq('status', 'available');
+            const grid = document.getElementById('acc-grid');
+            grid.innerHTML = "";
+            data.forEach(acc => {
+                const card = document.createElement('div');
+                card.className = 'acc-card';
+                card.innerHTML = `<div class="acc-img" style="background-image: url('${acc.image_url || 'https://via.placeholder.com/400x200'}')"></div><div class="acc-info"><div class="acc-game">${acc.game}</div><div class="acc-name">${acc.account_name}</div><p class="acc-desc">${acc.description}</p><div class="acc-footer"><div class="acc-price">${acc.price.toLocaleString()} Ks</div><button class="buy-btn" onclick='openModal(${JSON.stringify(acc)})'>ဝယ်ယူရန်</button></div></div>`;
+                grid.appendChild(card);
+            });
+        }
+        function openModal(acc) { selectedAcc = acc; document.getElementById('modal-acc-name').innerText = acc.account_name; document.getElementById('buy-modal').style.display = 'flex'; }
+        function closeModal() { document.getElementById('buy-modal').style.display = 'none'; }
+        async function confirmBuy() {
+            const contact = document.getElementById('contact').value;
+            if (!contact) { showToast("ဆက်သွယ်ရန် အချက်အလက် ဖြည့်ပါ။"); return; }
+            const { data: { session } } = await supabase.auth.getSession();
+            const { data: user } = await supabase.from('users').select('*').eq('id', session.user.id).single();
+            if (user.balance < selectedAcc.price) { showToast("လက်ကျန်ငွေ မလုံလောက်ပါ။"); return; }
+            await supabase.from('users').update({ balance: user.balance - selectedAcc.price }).eq('id', user.id);
+            await supabase.from('accounts').update({ status: 'sold' }).eq('id', selectedAcc.id);
+            await supabase.from('orders').insert({ user_id: user.id, product_name: `Acc: ${selectedAcc.account_name}`, price: selectedAcc.price, status: 'approved' });
+            const botToken = "8653967411:AAFfw-0pR8RysuPD6aoSlZ7w7d8XNNs8l_A";
+            const chatId = "6427719618";
+            fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ chat_id: chatId, text: `🔥 New Account Purchase!\nAcc: ${selectedAcc.account_name}\nUser: ${user.email}\nContact: ${contact}` }) });
+            showToast("ဝယ်ယူမှု အောင်မြင်ပါသည်။ Admin မှ ဆက်သွယ်ပါလိမ့်မည်။");
+            closeModal(); loadAccounts();
+        }
+        function showToast(msg) { const t = document.getElementById('toast'); t.innerText = msg; t.style.display = 'block'; setTimeout(() => t.style.display = 'none', 3000); }
+        window.onload = loadAccounts;
+    </script>
+</body>
+</html>

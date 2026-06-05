@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="my">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ငွေဖြည့်ရန် - John Gaming Shop</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        :root { --bg-color: #0a0f1e; --glass-bg: rgba(255, 255, 255, 0.05); --neon-cyan: #00ffe7; --neon-blue: #3b82f6; --text-color: #ffffff; }
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Pyidaungsu', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        body { background: radial-gradient(circle at 20% 30%, #0a0f1e, #020408); min-height: 100vh; color: var(--text-color); padding-bottom: 20px; }
+        header { background: var(--glass-bg); backdrop-filter: blur(10px); padding: 20px; display: flex; align-items: center; gap: 15px; border-bottom: 1px solid rgba(0, 255, 231, 0.2); position: sticky; top: 0; z-index: 100; }
+        .back-btn { color: white; text-decoration: none; font-size: 20px; }
+        .content { padding: 20px; }
+        .bank-card { background: var(--glass-bg); border: 1px solid rgba(255,255,255,0.1); border-radius: 20px; padding: 20px; margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center; }
+        .bank-info h4 { color: var(--neon-cyan); margin-bottom: 5px; }
+        .copy-btn { background: rgba(0, 255, 231, 0.1); border: 1px solid var(--neon-cyan); color: var(--neon-cyan); padding: 5px 10px; border-radius: 10px; cursor: pointer; }
+        .topup-form { background: var(--glass-bg); border-radius: 20px; padding: 25px; margin-top: 20px; border: 1px solid rgba(255,255,255,0.1); }
+        .input-group { margin-bottom: 15px; text-align: left; }
+        label { display: block; margin-bottom: 8px; font-size: 14px; }
+        input { width: 100%; padding: 12px 20px; background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 40px; color: white; outline: none; }
+        .btn { width: 100%; padding: 15px; background: linear-gradient(90deg, var(--neon-cyan), var(--neon-blue)); border: none; border-radius: 40px; color: #000; font-weight: bold; cursor: pointer; margin-top: 10px; }
+        .toast { position: fixed; top: 20px; right: 20px; background: var(--glass-bg); backdrop-filter: blur(10px); border: 1px solid var(--neon-cyan); padding: 15px 25px; border-radius: 10px; display: none; z-index: 1000; }
+        .loader { display: none; border: 3px solid rgba(255, 255, 255, 0.1); border-radius: 50%; border-top: 3px solid var(--neon-cyan); width: 20px; height: 20px; animation: spin 1s linear infinite; margin: 10px auto; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    </style>
+</head>
+<body>
+    <header><a href="payment.html" class="back-btn"><i class="fas fa-arrow-left"></i></a><h2>ငွေဖြည့်သွင်းရန်</h2></header>
+    <div class="content">
+        <div class="bank-card"><div class="bank-info"><h4>KBZ Pay</h4><p><b>Aung Zaw Myint</b></p><p id="kbz1">09426012797</p></div><button class="copy-btn" onclick="copy('09426012797')">ကူးယူရန်</button></div>
+        <div class="bank-card"><div class="bank-info"><h4>KBZ Pay </h4><p><b>Thet Aung</b></p><p id="kbz2">09966760795</p></div><button class="copy-btn" onclick="copy('09966760795')">ကူးယူရန်</button></div>
+        <div class="bank-card"><div class="bank-info"><h4>Wave Pay</h4><p><b>Htay Htay Hlaing</b></p><p id="wave1">09792328651</p></div><button class="copy-btn" onclick="copy('09792328651')">ကူးယူရန်</button></div>
+        <div class="bank-card"><div class="bank-info"><h4>Wave Pay </h4><p><b>Thet Aung</b></p><p id="wave2">09966760795</p></div><button class="copy-btn" onclick="copy('09966760795')">ကူးယူရန်</button></div>
+        <div class="topup-form">
+            <div class="input-group"><label>ဖြည့်သွင်းမည့် ပမာဏ (Ks)</label><input type="number" id="amount" placeholder="5000"></div>
+            <div class="input-group"><label>ငွေလွှဲပြေစာ (Slip)</label><input type="file" id="slip" accept="image/*"></div>
+            <div id="loader" class="loader"></div>
+            <button class="btn" onclick="submitTopup()">တင်သွင်းရန်</button>
+        </div>
+    </div>
+    <div id="toast" class="toast"></div>
+    <script>
+        const supabaseUrl = 'https://obtfamhkvsodmrfjetsm.supabase.co';
+        const supabaseKey = 'sb_publishable_KpHT5E9yRy9y1jkDZN9RAg_WHBJMDj9';
+        const supabase = supabase.createClient(supabaseUrl, supabaseKey);
+        function copy(id) { const text = document.getElementById(id).innerText; navigator.clipboard.writeText(text); showToast("ကူးယူပြီးပါပြီ"); }
+        async function submitTopup() {
+            const amount = document.getElementById('amount').value;
+            const slipFile = document.getElementById('slip').files[0];
+            if (!amount || !slipFile) { showToast("အချက်အလက်များ ပြည့်စုံစွာ ဖြည့်ပါ။"); return; }
+            const loader = document.getElementById('loader');
+            loader.style.display = 'block';
+            const { data: { session } } = await supabase.auth.getSession();
+            const userId = session.user.id;
+            const fileName = `${userId}_${Date.now()}.png`;
+            const { data: uploadData, error: uploadError } = await supabase.storage.from('payments').upload(fileName, slipFile);
+            if (uploadError) { showToast("ပုံတင်ရာတွင် အမှားအယွင်းရှိပါသည်။"); loader.style.display = 'none'; return; }
+            const imageUrl = supabase.storage.from('payments').getPublicUrl(fileName).data.publicUrl;
+            await supabase.from('payment_requests').insert({ user_id: userId, amount: parseInt(amount), image_url: imageUrl, status: 'pending' });
+            const botToken = "8653967411:AAFfw-0pR8RysuPD6aoSlZ7w7d8XNNs8l_A";
+            const chatId = "6427719618";
+            const message = `💰 New Topup Request!\nUser: ${session.user.email}\nAmount: ${amount} Ks\nSlip: ${imageUrl}`;
+            fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ chat_id: chatId, text: message }) });
+            loader.style.display = 'none';
+            showToast("တင်သွင်းမှု အောင်မြင်ပါသည်။ ခေတ္တစောင့်ဆိုင်းပေးပါ။");
+            setTimeout(() => window.location.href = 'home.html', 2000);
+        }
+        function showToast(msg) { const toast = document.getElementById('toast'); toast.innerText = msg; toast.style.display = 'block'; setTimeout(() => { toast.style.display = 'none'; }, 3000); }
+    </script>
+</body>
+</html>

@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="my">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>အကောင့်သစ်ဖွင့်ရန် - John Gaming Shop</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        :root {
+            --bg-color: #0a0f1e;
+            --glass-bg: rgba(255, 255, 255, 0.05);
+            --neon-cyan: #00ffe7;
+            --neon-blue: #3b82f6;
+            --text-color: #ffffff;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Pyidaungsu', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background: radial-gradient(circle at 20% 30%, #0a0f1e, #020408);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-color);
+            padding: 20px;
+        }
+
+        .signup-container {
+            background: var(--glass-bg);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(0, 255, 231, 0.2);
+            border-radius: 30px;
+            padding: 40px;
+            width: 100%;
+            max-width: 400px;
+            box-shadow: 0 0 20px rgba(0, 255, 231, 0.1);
+            text-align: center;
+        }
+
+        h1 {
+            font-size: 24px;
+            margin-bottom: 30px;
+            color: var(--neon-cyan);
+            text-shadow: 0 0 10px rgba(0, 255, 231, 0.5);
+        }
+
+        .input-group {
+            margin-bottom: 15px;
+            text-align: left;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-size: 14px;
+            color: rgba(255, 255, 255, 0.8);
+        }
+
+        input {
+            width: 100%;
+            padding: 10px 20px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 40px;
+            color: white;
+            outline: none;
+            transition: 0.3s;
+        }
+
+        input:focus {
+            border-color: var(--neon-cyan);
+            box-shadow: 0 0 10px rgba(0, 255, 231, 0.3);
+        }
+
+        .btn {
+            width: 100%;
+            padding: 12px;
+            background: linear-gradient(90deg, var(--neon-cyan), var(--neon-blue));
+            border: none;
+            border-radius: 40px;
+            color: #000;
+            font-weight: bold;
+            cursor: pointer;
+            transition: 0.3s;
+            margin-top: 10px;
+        }
+
+        .btn:hover {
+            transform: scale(1.02);
+            box-shadow: 0 0 20px rgba(0, 255, 231, 0.4);
+        }
+
+        .link {
+            margin-top: 20px;
+            font-size: 14px;
+            color: rgba(255, 255, 255, 0.6);
+        }
+
+        .link a {
+            color: var(--neon-cyan);
+            text-decoration: none;
+        }
+
+        .error-msg {
+            color: #ff4d4d;
+            font-size: 14px;
+            margin-top: 10px;
+            display: none;
+        }
+
+        .loader {
+            display: none;
+            border: 3px solid rgba(255, 255, 255, 0.1);
+            border-radius: 50%;
+            border-top: 3px solid var(--neon-cyan);
+            width: 20px;
+            height: 20px;
+            animation: spin 1s linear infinite;
+            margin: 10px auto;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="signup-container">
+        <h1>John Gaming Shop</h1>
+        <div class="input-group">
+            <label>အမည်</label>
+            <input type="text" id="name" placeholder="မောင်မောင်">
+        </div>
+        <div class="input-group">
+            <label>ဖုန်းနံပါတ်</label>
+            <input type="text" id="phone" placeholder="09xxxxxxxxx">
+        </div>
+        <div class="input-group">
+            <label>အီးမေးလ်</label>
+            <input type="email" id="email" placeholder="example@gmail.com">
+        </div>
+        <div class="input-group">
+            <label>စကားဝှက်</label>
+            <input type="password" id="password" placeholder="••••••••">
+        </div>
+        <div class="input-group">
+            <label>စကားဝှက်ကို ထပ်မံရိုက်ပါ</label>
+            <input type="password" id="confirm-password" placeholder="••••••••">
+        </div>
+        <div id="error-msg" class="error-msg">အချက်အလက်များ မှားယွင်းနေပါသည်။</div>
+        <div id="loader" class="loader"></div>
+        <button class="btn" onclick="signup()">အကောင့်ဖွင့်ရန်</button>
+        <div class="link">
+            အကောင့်ရှိပြီးသားလား? <a href="login.html">အကောင့်ဝင်ရန်</a>
+        </div>
+    </div>
+
+    <script>
+        const supabaseUrl = 'https://obtfamhkvsodmrfjetsm.supabase.co';
+        const supabaseKey = 'sb_publishable_KpHT5E9yRy9y1jkDZN9RAg_WHBJMDj9';
+        const supabase = supabase.createClient(supabaseUrl, supabaseKey);
+
+        async function signup() {
+            const name = document.getElementById('name').value;
+            const phone = document.getElementById('phone').value;
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            const confirmPassword = document.getElementById('confirm-password').value;
+            const errorMsg = document.getElementById('error-msg');
+            const loader = document.getElementById('loader');
+
+            if (!name || !phone || !email || !password || !confirmPassword) {
+                errorMsg.innerText = "ကျေးဇူးပြု၍ အချက်အလက်များ အပြည့်အစုံဖြည့်ပါ။";
+                errorMsg.style.display = 'block';
+                return;
+            }
+
+            if (password !== confirmPassword) {
+                errorMsg.innerText = "စကားဝှက်များ မတူညီပါ။";
+                errorMsg.style.display = 'block';
+                return;
+            }
+
+            errorMsg.style.display = 'none';
+            loader.style.display = 'block';
+
+            const { data, error } = await supabase.auth.signUp({
+                email: email,
+                password: password,
+                options: {
+                    data: {
+                        name: name,
+                        phone: phone
+                    }
+                }
+            });
+
+            loader.style.display = 'none';
+
+            if (error) {
+                errorMsg.innerText = error.message;
+                errorMsg.style.display = 'block';
+            } else {
+                alert("အကောင့်ဖွင့်ခြင်း အောင်မြင်ပါသည်။ ကျေးဇူးပြု၍ အီးမေးလ်စစ်ဆေးပါ။");
+                window.location.href = 'login.html';
+            }
+        }
+    </script>
+</body>
+</html>

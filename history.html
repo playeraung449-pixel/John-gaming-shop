@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="my">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ဝယ်ယူမှုမှတ်တမ်း - John Gaming Shop</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        :root { --bg-color: #0a0f1e; --glass-bg: rgba(255, 255, 255, 0.05); --neon-cyan: #00ffe7; --neon-blue: #3b82f6; --text-color: #ffffff; }
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Pyidaungsu', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        body { background: radial-gradient(circle at 20% 30%, #0a0f1e, #020408); min-height: 100vh; color: var(--text-color); padding-bottom: 80px; }
+        header { background: var(--glass-bg); backdrop-filter: blur(10px); padding: 20px; display: flex; align-items: center; gap: 15px; border-bottom: 1px solid rgba(0, 255, 231, 0.2); position: sticky; top: 0; z-index: 100; }
+        .back-btn { color: white; text-decoration: none; font-size: 20px; }
+        .history-list { padding: 20px; }
+        .history-card { background: var(--glass-bg); border: 1px solid rgba(255,255,255,0.1); border-radius: 20px; padding: 20px; margin-bottom: 15px; position: relative; overflow: hidden; }
+        .history-card::before { content: ''; position: absolute; left: 0; top: 0; width: 5px; height: 100%; }
+        .status-pending::before { background: #ffcc00; }
+        .status-approved::before { background: #00ff00; }
+        .status-rejected::before { background: #ff4d4d; }
+        .history-header { display: flex; justify-content: space-between; margin-bottom: 10px; }
+        .product-name { font-weight: bold; color: var(--neon-cyan); }
+        .status-badge { font-size: 12px; padding: 2px 8px; border-radius: 10px; }
+        .status-pending .status-badge { background: rgba(255, 204, 0, 0.2); color: #ffcc00; }
+        .status-approved .status-badge { background: rgba(0, 255, 0, 0.2); color: #00ff00; }
+        .status-rejected .status-badge { background: rgba(255, 77, 77, 0.2); color: #ff4d4d; }
+        .history-details { font-size: 14px; color: rgba(255,255,255,0.7); }
+        .bottom-nav { position: fixed; bottom: 0; width: 100%; background: rgba(10, 15, 30, 0.9); backdrop-filter: blur(10px); display: flex; justify-content: space-around; padding: 15px; border-top: 1px solid rgba(255, 255, 255, 0.1); }
+        .nav-item { text-decoration: none; color: rgba(255, 255, 255, 0.6); text-align: center; font-size: 12px; }
+        .nav-item.active { color: var(--neon-cyan); }
+        .nav-item i { font-size: 20px; display: block; margin-bottom: 5px; }
+    </style>
+</head>
+<body>
+    <header><a href="index.html" class="back-btn"><i class="fas fa-arrow-left"></i></a><h2>ဝယ်ယူမှုမှတ်တမ်း</h2></header>
+    <div class="history-list" id="history-list">
+        <!-- History items will be injected here -->
+    </div>
+    <nav class="bottom-nav"><a href="home.html" class="nav-item"><i class="fas fa-home"></i>ပင်မ</a><a href="history.html" class="nav-item active"><i class="fas fa-history"></i>မှတ်တမ်း</a><a href="messages.html" class="nav-item"><i class="fas fa-comment-dots"></i>မက်ဆေ့ချ်</a><a href="aichat.html" class="nav-item"><i class="fas fa-robot"></i>AI Chat</a><a href="howtouse.html" class="nav-item"><i class="fas fa-question-circle"></i>အသုံးပြုနည်း</a></nav>
+    <script>
+        const supabaseUrl = 'https://obtfamhkvsodmrfjetsm.supabase.co';
+        const supabaseKey = 'sb_publishable_KpHT5E9yRy9y1jkDZN9RAg_WHBJMDj9';
+        const supabase = supabase.createClient(supabaseUrl, supabaseKey);
+        async function loadHistory() {
+            const { data: { session } } = await supabase.auth.getSession();
+            if (!session) { window.location.href = 'login.html'; return; }
+            const { data, error } = await supabase.from('orders').select('*').eq('user_id', session.user.id).order('created_at', { ascending: false });
+            const list = document.getElementById('history-list');
+            if (data.length === 0) { list.innerHTML = "<p style='text-align:center; margin-top:50px;'>မှတ်တမ်းမရှိသေးပါ။</p>"; return; }
+            data.forEach(order => {
+                const statusMap = { 'pending': 'စောင့်ဆိုင်းဆဲ', 'approved': 'အောင်မြင်သည်', 'rejected': 'ငြင်းပယ်ခံရသည်' };
+                const card = document.createElement('div');
+                card.className = `history-card status-${order.status}`;
+                card.innerHTML = `<div class="history-header"><span class="product-name">${order.product_name}</span><span class="status-badge">${statusMap[order.status]}</span></div><div class="history-details"><p>စျေးနှုန်း: ${order.price} Ks</p><p>Game ID: ${order.game_id || '-'}</p><p>ရက်စွဲ: ${new Date(order.created_at).toLocaleString()}</p></div>`;
+                list.appendChild(card);
+            });
+        }
+        window.onload = loadHistory;
+    </script>
+</body>
+</html>

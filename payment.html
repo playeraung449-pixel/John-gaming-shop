@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="my">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>ငွေဖြည့်သွင်းခြင်း စည်းမျဉ်းများ - John Gaming Shop</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        :root { 
+            --bg-color: #0a0f1e; 
+            --glass-bg: rgba(255, 255, 255, 0.05); 
+            --neon-cyan: #00ffe7; 
+            --neon-blue: #3b82f6; 
+            --text-color: #ffffff; 
+            --warning-red: #ff4d4d;
+        }
+        * { 
+            margin: 0; 
+            padding: 0; 
+            box-sizing: border-box; 
+            font-family: 'Pyidaungsu', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+        }
+        body { 
+            background: radial-gradient(circle at 20% 30%, #0a0f1e, #020408); 
+            min-height: 100vh; 
+            color: var(--text-color); 
+            display: flex; 
+            flex-direction: column;
+            align-items: center; 
+            justify-content: center; 
+            padding: 20px; 
+        }
+
+        /* Sticky header with back button - clearly on top */
+        .top-header {
+            background: rgba(10, 15, 30, 0.85);
+            backdrop-filter: blur(12px);
+            padding: 14px 24px;
+            display: flex;
+            align-items: center;
+            gap: 18px;
+            border-bottom: 1px solid rgba(0, 255, 231, 0.3);
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            z-index: 100;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+        }
+
+        .back-btn {
+            color: #00ffe7;
+            text-decoration: none;
+            font-size: 26px;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 44px;
+            height: 44px;
+            background: rgba(0, 255, 231, 0.1);
+            border-radius: 60px;
+            transition: all 0.25s ease;
+            border: 1px solid rgba(0, 255, 231, 0.3);
+        }
+
+        .back-btn:hover {
+            background: rgba(0, 255, 231, 0.25);
+            transform: scale(1.02);
+            color: white;
+            border-color: #00ffe7;
+        }
+
+        .top-header h2 {
+            font-size: 1.5rem;
+            font-weight: 600;
+            letter-spacing: -0.3px;
+            background: linear-gradient(135deg, #ffffff, #00ffe7);
+            background-clip: text;
+            -webkit-background-clip: text;
+            color: transparent;
+            margin: 0;
+        }
+
+        /* Adjust warning-card to have margin-top due to fixed header */
+        .warning-card { 
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px); 
+            border: 1px solid rgba(255, 77, 77, 0.4); 
+            border-radius: 36px; 
+            padding: 32px 28px; 
+            width: 100%; 
+            max-width: 540px; 
+            text-align: center; 
+            margin-top: 100px;    /* space for fixed header */
+            margin-bottom: 30px;
+            transition: 0.2s;
+            box-shadow: 0 25px 40px -12px rgba(0,0,0,0.5);
+        }
+
+        i.fa-exclamation-triangle { 
+            font-size: 64px; 
+            color: #ff4d4d; 
+            margin-bottom: 20px; 
+            filter: drop-shadow(0 0 6px rgba(255, 77, 77, 0.5));
+        }
+        h2 { 
+            margin-bottom: 22px; 
+            color: #ff4d4d; 
+            font-weight: 700;
+            font-size: 1.7rem;
+        }
+        .rules-list { 
+            text-align: left; 
+            margin-bottom: 32px; 
+            line-height: 1.8; 
+            background: rgba(0,0,0,0.2);
+            padding: 12px 18px;
+            border-radius: 28px;
+        }
+        .rules-list li { 
+            margin-bottom: 12px; 
+            font-size: 0.98rem;
+            letter-spacing: 0.2px;
+            list-style-type: none;
+            position: relative;
+            padding-left: 28px;
+        }
+        .rules-list li:before {
+            content: "⚠️";
+            position: absolute;
+            left: 0;
+            top: 0;
+            font-size: 1rem;
+        }
+        .btn { 
+            width: 100%; 
+            padding: 16px; 
+            background: linear-gradient(90deg, var(--neon-cyan), var(--neon-blue)); 
+            border: none; 
+            border-radius: 60px; 
+            color: #000; 
+            font-weight: 800; 
+            font-size: 1.1rem; 
+            cursor: pointer; 
+            text-decoration: none; 
+            display: inline-block;
+            text-align: center;
+            transition: all 0.25s;
+            box-shadow: 0 6px 14px rgba(0, 255, 231, 0.2);
+        }
+        .btn:hover {
+            transform: scale(0.97);
+            background: linear-gradient(90deg, #00e0d0, #2a5ef0);
+            box-shadow: 0 8px 22px rgba(0, 255, 231, 0.4);
+        }
+
+        /* responsive */
+        @media (max-width: 550px) {
+            .top-header { padding: 10px 20px; }
+            .back-btn { width: 40px; height: 40px; font-size: 22px; }
+            .top-header h2 { font-size: 1.2rem; }
+            .warning-card { padding: 24px 20px; margin-top: 90px; }
+            .rules-list li { font-size: 0.88rem; padding-left: 26px; }
+            .btn { font-size: 1rem; padding: 14px; }
+            i.fa-exclamation-triangle { font-size: 52px; }
+            h2 { font-size: 1.4rem; }
+        }
+        @media (max-width: 400px) {
+            .warning-card { margin-top: 100px; }
+        }
+    </style>
+</head>
+<body>
+
+<!-- Fixed header with back button on top (exactly as required) -->
+<div class="top-header">
+    <a href="index.html" class="back-btn" aria-label="Go back">
+        <i class="fas fa-arrow-left"></i>
+    </a>
+    <h2><i class="fas fa-coins" style="font-size: 1.2rem; margin-right: 6px;"></i> ငွေမဖြည့်ခင်အသိပေးချက်</h2>
+</div>
+
+<div class="warning-card">
+    <i class="fas fa-exclamation-triangle"></i>
+    <h2>သတိပြုရန် စည်းကမ်းချက်များ</h2>
+    <ul class="rules-list">
+        <li>၁။ ငွေလွှဲရာတွင် မှန်ကန်သော အကောင့်နံပါတ်သို့သာ လွှဲပေးပါ။</li>
+        <li>၂။ ငွေလွှဲပြီးပါက Screenshot (Slip) ကို သေချာစွာ သိမ်းထားပါ။</li>
+        <li>၃။ ငွေဖြည့်သွင်းမှု တစ်ကြိမ်လျှင် အနည်းဆုံး ၅၀၀ ကျပ် ဖြစ်ရပါမည်။</li>
+        <li>၄။ လိမ်လည်မှု တစ်စုံတစ်ရာ တွေ့ရှိပါက အကောင့်ကို ပိတ်သိမ်းပါမည်။</li>
+        <li>၅။ အချက်အလက် မှားယွင်းမှုများအတွက် တာဝန်ယူမည် မဟုတ်ပါ။</li>
+    </ul>
+    <a href="topup.html" class="btn"><i class="fas fa-check-circle" style="margin-right: 8px;"></i> သဘောတူညီပြီး ရှေ့ဆက်ရန်</a>
+</div>
+
+<!-- tiny extra safety: ensure supabase loaded (kept from original) but no extra logic needed -->
+</body>
+</html>

@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="my">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Free Fire ဝယ်ယူရန် - John Gaming Shop</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        :root {
+            --bg-color: #0a0f1e;
+            --glass-bg: rgba(255, 255, 255, 0.05);
+            --neon-cyan: #00ffe7;
+            --neon-blue: #3b82f6;
+            --text-color: #ffffff;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Pyidaungsu', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background: radial-gradient(circle at 20% 30%, #0a0f1e, #020408);
+            min-height: 100vh;
+            color: var(--text-color);
+            padding-bottom: 20px;
+        }
+
+        header {
+            background: var(--glass-bg);
+            backdrop-filter: blur(10px);
+            padding: 20px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            border-bottom: 1px solid rgba(0, 255, 231, 0.2);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .back-btn {
+            color: white;
+            text-decoration: none;
+            font-size: 20px;
+        }
+
+        .product-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+            padding: 20px;
+        }
+
+        .product-card {
+            background: var(--glass-bg);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 20px;
+            padding: 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+
+        .product-card:hover {
+            transform: translateY(-5px);
+            border-color: var(--neon-cyan);
+            box-shadow: 0 0 15px rgba(0, 255, 231, 0.2);
+        }
+
+        .product-name {
+            font-size: 14px;
+            margin-bottom: 10px;
+            color: var(--neon-cyan);
+        }
+
+        .product-price {
+            font-size: 16px;
+            font-weight: bold;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(5px);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .modal-content {
+            background: #0a0f1e;
+            border: 1px solid var(--neon-cyan);
+            border-radius: 30px;
+            padding: 30px;
+            width: 100%;
+            max-width: 400px;
+            text-align: center;
+        }
+
+        .modal-title {
+            margin-bottom: 20px;
+            color: var(--neon-cyan);
+        }
+
+        .input-group {
+            margin-bottom: 15px;
+            text-align: left;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-size: 14px;
+        }
+
+        input {
+            width: 100%;
+            padding: 12px 20px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 40px;
+            color: white;
+            outline: none;
+        }
+
+        .modal-btns {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .btn {
+            flex: 1;
+            padding: 12px;
+            border-radius: 40px;
+            border: none;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .btn-verify {
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+        }
+
+        .btn-buy {
+            background: linear-gradient(90deg, var(--neon-cyan), var(--neon-blue));
+            color: #000;
+        }
+
+        .toast {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: var(--glass-bg);
+            backdrop-filter: blur(10px);
+            border: 1px solid var(--neon-cyan);
+            padding: 15px 25px;
+            border-radius: 10px;
+            display: none;
+            z-index: 2000;
+        }
+
+        .loader {
+            display: none;
+            border: 3px solid rgba(255, 255, 255, 0.1);
+            border-radius: 50%;
+            border-top: 3px solid var(--neon-cyan);
+            width: 20px;
+            height: 20px;
+            animation: spin 1s linear infinite;
+            margin: 10px auto;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <a href="game.html" class="back-btn"><i class="fas fa-arrow-left"></i></a>
+        <h2>Free Fire</h2>
+    </header>
+
+    <div class="product-grid" id="product-list">
+        <!-- Products will be injected here -->
+    </div>
+
+    <div id="purchase-modal" class="modal">
+        <div class="modal-content">
+            <h3 class="modal-title" id="modal-product-name">Product Name</h3>
+            <div class="input-group">
+                <label>Player ID</label>
+                <input type="text" id="game-id" placeholder="123456789">
+            </div>
+            <div id="loader" class="loader"></div>
+            <div class="modal-btns">
+                <button class="btn btn-verify" onclick="verifyAccount()">စစ်ဆေးရန်</button>
+                <button class="btn btn-buy" onclick="purchase()">ဝယ်ယူရန်</button>
+            </div>
+            <button class="btn" style="margin-top:10px; background:none; color:white;" onclick="closeModal()">ပိတ်ရန်</button>
+        </div>
+    </div>
+
+    <div id="toast" class="toast"></div>
+
+    <script>
+        const supabaseUrl = 'https://obtfamhkvsodmrfjetsm.supabase.co';
+        const supabaseKey = 'sb_publishable_KpHT5E9yRy9y1jkDZN9RAg_WHBJMDj9';
+        const supabase = supabase.createClient(supabaseUrl, supabaseKey);
+
+        const products = [
+            { name: "210 Diamonds", price: 4200 },
+            { name: "1080 Diamonds", price: 20800 },
+            { name: "2200 Diamonds", price: 80000 }
+        ];
+
+        let selectedProduct = null;
+
+        function renderProducts() {
+            const list = document.getElementById('product-list');
+            products.forEach(p => {
+                const card = document.createElement('div');
+                card.className = 'product-card';
+                card.onclick = () => openModal(p);
+                card.innerHTML = `
+                    <div class="product-name">${p.name}</div>
+                    <div class="product-price">${p.price.toLocaleString()} Ks</div>
+                `;
+                list.appendChild(card);
+            });
+        }
+
+        function openModal(product) {
+            selectedProduct = product;
+            document.getElementById('modal-product-name').innerText = product.name;
+            document.getElementById('purchase-modal').style.display = 'flex';
+        }
+
+        function closeModal() {
+            document.getElementById('purchase-modal').style.display = 'none';
+        }
+
+        async function verifyAccount() {
+            const loader = document.getElementById('loader');
+            loader.style.display = 'block';
+            await new Promise(r => setTimeout(r, 1000));
+            loader.style.display = 'none';
+            showToast("အကောင့်စစ်ဆေးပြီးပါပြီ။");
+        }
+
+        async function purchase() {
+            const gameId = document.getElementById('game-id').value;
+
+            if (!gameId) {
+                showToast("Player ID ဖြည့်သွင်းပါ။");
+                return;
+            }
+
+            const { data: { session } } = await supabase.auth.getSession();
+            if (!session) {
+                window.location.href = 'login.html';
+                return;
+            }
+
+            const userId = session.user.id;
+            const { data: user } = await supabase.from('users').select('*').eq('id', userId).single();
+
+            if (user.balance < selectedProduct.price) {
+                showToast("လက်ကျန်ငွေ မလုံလောက်ပါ။");
+                return;
+            }
+
+            const loader = document.getElementById('loader');
+            loader.style.display = 'block';
+
+            await supabase.from('users').update({ balance: user.balance - selectedProduct.price }).eq('id', userId);
+
+            const { data: order } = await supabase.from('orders').insert({
+                user_id: userId,
+                product_name: `Free Fire - ${selectedProduct.name}`,
+                price: selectedProduct.price,
+                game_id: gameId,
+                status: 'pending'
+            }).select().single();
+
+            const botToken = "8653967411:AAFfw-0pR8RysuPD6aoSlZ7w7d8XNNs8l_A";
+            const chatId = "6427719618";
+            const message = `🔔 New Free Fire Purchase!\nUser: ${user.email}\nProduct: ${selectedProduct.name}\nPlayer ID: ${gameId}\nPrice: ${selectedProduct.price} Ks`;
+            
+            fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ chat_id: chatId, text: message })
+            });
+
+            loader.style.display = 'none';
+            showToast(`ဝယ်ယူမှု အောင်မြင်ပါသည်။ Order ID: ${order.id}`);
+            closeModal();
+        }
+
+        function showToast(msg) {
+            const toast = document.getElementById('toast');
+            toast.innerText = msg;
+            toast.style.display = 'block';
+            setTimeout(() => { toast.style.display = 'none'; }, 3000);
+        }
+
+        window.onload = renderProducts;
+    </script>
+</body>
+</html>

@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="my">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Panel - John Gaming Shop</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        :root { --bg-color: #0a0f1e; --glass-bg: rgba(255, 255, 255, 0.05); --neon-cyan: #00ffe7; --neon-blue: #3b82f6; --text-color: #ffffff; }
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Pyidaungsu', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        body { background: radial-gradient(circle at 20% 30%, #0a0f1e, #020408); min-height: 100vh; color: var(--text-color); }
+        header { background: var(--glass-bg); backdrop-filter: blur(10px); padding: 20px; border-bottom: 1px solid var(--neon-cyan); }
+        .tabs { display: flex; overflow-x: auto; background: rgba(0,0,0,0.3); }
+        .tab { padding: 15px 25px; cursor: pointer; border-bottom: 2px solid transparent; white-space: nowrap; }
+        .tab.active { border-color: var(--neon-cyan); color: var(--neon-cyan); background: rgba(0, 255, 231, 0.05); }
+        .tab-content { display: none; padding: 20px; }
+        .tab-content.active { display: block; }
+        .card { background: var(--glass-bg); border: 1px solid rgba(255,255,255,0.1); border-radius: 20px; padding: 20px; margin-bottom: 15px; }
+        .request-img { width: 100px; height: 100px; object-fit: cover; border-radius: 10px; cursor: pointer; }
+        .btn { padding: 8px 15px; border-radius: 10px; border: none; cursor: pointer; font-weight: bold; }
+        .btn-approve { background: #00ff00; color: #000; }
+        .btn-reject { background: #ff4d4d; color: #fff; }
+        .input-group { margin-bottom: 15px; }
+        input, textarea, select { width: 100%; padding: 10px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 10px; color: white; outline: none; margin-top: 5px; }
+        .user-search { display: flex; gap: 10px; margin-bottom: 20px; }
+    </style>
+</head>
+<body>
+    <header><h2>Admin Dashboard</h2></header>
+    <div class="tabs">
+        <div class="tab active" onclick="showTab(0)">ငွေဖြည့်တောင်းဆိုမှုများ</div>
+        <div class="tab" onclick="showTab(1)">အကောင့်စီမံရန်</div>
+        <div class="tab" onclick="showTab(2)">အသိပေးချက်များ</div>
+        <div class="tab" onclick="showTab(3)">အသုံးပြုသူများ</div>
+    </div>
+
+    <div id="tab0" class="tab-content active">
+        <h3>Pending Payment Requests</h3>
+        <div id="payment-list"></div>
+    </div>
+
+    <div id="tab1" class="tab-content">
+        <h3>Add New Account</h3>
+        <div class="card">
+            <input type="text" id="acc-game" placeholder="ဂိမ်းအမည် (ဥပမာ - MLBB)">
+            <input type="text" id="acc-name" placeholder="အကောင့်အမည်">
+            <textarea id="acc-desc" placeholder="အသေးစိတ်ဖော်ပြချက်"></textarea>
+            <input type="number" id="acc-price" placeholder="စျေးနှုန်း">
+            <input type="text" id="acc-img" placeholder="ပုံ URL">
+            <button class="btn btn-approve" style="margin-top:10px;" onclick="addAccount()">အကောင့်တင်မည်</button>
+        </div>
+        <div id="admin-acc-list"></div>
+    </div>
+
+    <div id="tab2" class="tab-content">
+        <h3>Send Global Notice</h3>
+        <div class="card">
+            <input type="text" id="notice-title" placeholder="ခေါင်းစဉ်">
+            <textarea id="notice-msg" placeholder="စာသား"></textarea>
+            <select id="notice-type">
+                <option value="announcement">Announcement</option>
+                <option value="warning">Warning</option>
+                <option value="promotion">Promotion</option>
+            </select>
+            <button class="btn btn-approve" style="margin-top:10px;" onclick="sendNotice()">ပို့မည်</button>
+        </div>
+    </div>
+
+    <div id="tab3" class="tab-content">
+        <div class="user-search">
+            <input type="text" id="user-email" placeholder="အီးမေးလ်ဖြင့် ရှာပါ...">
+            <button class="btn btn-approve" onclick="searchUser()">ရှာရန်</button>
+        </div>
+        <div id="user-result"></div>
+    </div>
+
+    <script>
+        const supabaseUrl = 'https://obtfamhkvsodmrfjetsm.supabase.co';
+        const supabaseKey = 'sb_publishable_KpHT5E9yRy9y1jkDZN9RAg_WHBJMDj9';
+        const supabase = supabase.createClient(supabaseUrl, supabaseKey);
+
+        async function checkAdmin() {
+            const { data: { session } } = await supabase.auth.getSession();
+            if (!session) { window.location.href = 'login.html'; return; }
+            const { data: user } = await supabase.from('users').select('role').eq('id', session.user.id).single();
+            if (user.role !== 'admin') { window.location.href = 'home.html'; }
+            loadPayments();
+        }
+
+        function showTab(i) {
+            document.querySelectorAll('.tab').forEach((t, idx) => t.classList.toggle('active', idx === i));
+            document.querySelectorAll('.tab-content').forEach((c, idx) => c.classList.toggle('active', idx === i));
+            if (i === 1) loadAdminAccounts();
+        }
+
+        async function loadPayments() {
+            const { data } = await supabase.from('payment_requests').select('*, users(email)').eq('status', 'pending');
+            const list = document.getElementById('payment-list');
+            list.innerHTML = "";
+            data.forEach(req => {
+                const card = document.createElement('div');
+                card.className = 'card';
+                card.innerHTML = `<p>User: ${req.users.email}</p><p>Amount: ${req.amount} Ks</p><img src="${req.image_url}" class="request-img" onclick="window.open('${req.image_url}')"><div style="margin-top:10px;"><button class="btn btn-approve" onclick="approvePayment(${req.id}, '${req.user_id}', ${req.amount})">Approve</button> <button class="btn btn-reject" onclick="updateStatus('payment_requests', ${req.id}, 'rejected')">Reject</button></div>`;
+                list.appendChild(card);
+            });
+        }
+
+        async function approvePayment(id, userId, amount) {
+            const { data: user } = await supabase.from('users').select('balance').eq('id', userId).single();
+            await supabase.from('users').update({ balance: user.balance + amount }).eq('id', userId);
+            await supabase.from('payment_requests').update({ status: 'approved' }).eq('id', id);
+            alert("Approved!"); loadPayments();
+        }
+
+        async function updateStatus(table, id, status) {
+            await supabase.from(table).update({ status: status }).eq('id', id);
+            alert("Updated!"); loadPayments();
+        }
+
+        async function addAccount() {
+            const game = document.getElementById('acc-game').value;
+            const name = document.getElementById('acc-name').value;
+            const desc = document.getElementById('acc-desc').value;
+            const price = document.getElementById('acc-price').value;
+            const img = document.getElementById('acc-img').value;
+            await supabase.from('accounts').insert({ game, account_name: name, description: desc, price: parseInt(price), image_url: img, status: 'available' });
+            alert("Account Added!"); loadAdminAccounts();
+        }
+
+        async function loadAdminAccounts() {
+            const { data } = await supabase.from('accounts').select('*');
+            const list = document.getElementById('admin-acc-list');
+            list.innerHTML = "<h4>Existing Accounts</h4>";
+            data.forEach(acc => {
+                const card = document.createElement('div');
+                card.className = 'card';
+                card.innerHTML = `<p>${acc.account_name} (${acc.status})</p><button class="btn btn-reject" onclick="deleteAcc(${acc.id})">Delete</button>`;
+                list.appendChild(card);
+            });
+        }
+
+        async function deleteAcc(id) { await supabase.from('accounts').delete().eq('id', id); loadAdminAccounts(); }
+
+        async function sendNotice() {
+            const title = document.getElementById('notice-title').value;
+            const msg = document.getElementById('notice-msg').value;
+            const type = document.getElementById('notice-type').value;
+            await supabase.from('notifications').insert({ title, message: msg, type });
+            alert("Notice Sent!");
+        }
+
+        async function searchUser() {
+            const email = document.getElementById('user-email').value;
+            const { data: user } = await supabase.from('users').select('*').eq('email', email).single();
+            const res = document.getElementById('user-result');
+            if (!user) { res.innerHTML = "User not found"; return; }
+            res.innerHTML = `<div class="card"><p>Name: ${user.name}</p><p>Balance: ${user.balance} Ks</p><p>Spin Tokens: ${user.spin_tokens}</p><textarea id="private-msg" placeholder="Private message to user..."></textarea><button class="btn btn-approve" onclick="sendPrivateNotice('${user.id}')">Send Message</button></div>`;
+        }
+
+        async function sendPrivateNotice(userId) {
+            const msg = document.getElementById('private-msg').value;
+            await supabase.from('notifications').insert({ user_id: userId, title: 'Private Message', message: msg, type: 'announcement' });
+            alert("Message Sent!");
+        }
+
+        window.onload = checkAdmin;
+    </script>
+</body>
+</html>

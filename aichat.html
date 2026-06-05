@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="my">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Chat - John Gaming Shop</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        :root { --bg-color: #0a0f1e; --glass-bg: rgba(255, 255, 255, 0.05); --neon-cyan: #00ffe7; --neon-blue: #3b82f6; --text-color: #ffffff; }
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Pyidaungsu', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        body { background: radial-gradient(circle at 20% 30%, #0a0f1e, #020408); height: 100vh; color: var(--text-color); display: flex; flex-direction: column; }
+        header { background: var(--glass-bg); backdrop-filter: blur(10px); padding: 20px; display: flex; align-items: center; gap: 15px; border-bottom: 1px solid rgba(0, 255, 231, 0.2); }
+        .back-btn { color: white; text-decoration: none; font-size: 20px; }
+        #chat-box { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 15px; }
+        .message { max-width: 80%; padding: 12px 18px; border-radius: 20px; font-size: 14px; position: relative; }
+        .msg-user { align-self: flex-end; background: var(--neon-cyan); color: #000; border-bottom-right-radius: 2px; }
+        .msg-bot { align-self: flex-start; background: rgba(255, 255, 255, 0.1); color: #fff; border-bottom-left-radius: 2px; border: 1px solid rgba(255,255,255,0.1); }
+        .quick-replies { padding: 10px 20px; display: flex; gap: 10px; overflow-x: auto; background: rgba(0,0,0,0.2); }
+        .reply-btn { background: rgba(255, 255, 255, 0.05); border: 1px solid var(--neon-cyan); color: var(--neon-cyan); padding: 8px 15px; border-radius: 20px; white-space: nowrap; cursor: pointer; font-size: 12px; }
+        .input-area { background: var(--glass-bg); padding: 20px; display: flex; gap: 10px; border-top: 1px solid rgba(255,255,255,0.1); }
+        input { flex: 1; background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 40px; padding: 12px 20px; color: white; outline: none; }
+        .send-btn { background: var(--neon-cyan); border: none; width: 45px; height: 45px; border-radius: 50%; color: #000; cursor: pointer; }
+    </style>
+</head>
+<body>
+    <header><a href="index.html" class="back-btn"><i class="fas fa-arrow-left"></i></a><h2>AI Chat Bot</h2></header>
+    <div id="chat-box">
+        <div class="message msg-bot">မင်္ဂလာပါ! John Gaming Shop မှ ကြိုဆိုပါတယ်။ ဘာများ ကူညီပေးရမလဲခင်ဗျာ။</div>
+    </div>
+    <div class="quick-replies">
+        <button class="reply-btn" onclick="quickReply('ဂိမ်းစျေးနှုန်းများ')">ဂိမ်းစျေးနှုန်းများ</button>
+        <button class="reply-btn" onclick="quickReply('ငွေဖြည့်နည်း')">ငွေဖြည့်နည်း</button>
+        <button class="reply-btn" onclick="quickReply('အကောင့်ပြဿနာ')">အကောင့်ပြဿနာ</button>
+        <button class="reply-btn" onclick="quickReply('ဝန်ဆောင်မှုများ')">ဝန်ဆောင်မှုများ</button>
+        <button class="reply-btn" onclick="quickReply('Spin Wheel အကြောင်း')">Spin Wheel အကြောင်း</button>
+    </div>
+    <div class="input-area"><input type="text" id="msg-input" placeholder="မေးခွန်းတစ်ခုခု မေးပါ..."><button class="send-btn" onclick="sendMessage()"><i class="fas fa-paper-plane"></i></button></div>
+    <script>
+        const responses = {
+            "ဂိမ်းစျေးနှုန်းများ": "ဂိမ်းစျေးနှုန်းများကို 'ဂိမ်းများ' menu ထဲတွင် အသေးစိတ် ကြည့်ရှုနိုင်ပါသည်။ MLBB, Free Fire, PUBG စသည်တို့ ရှိပါသည်။",
+            "ငွေဖြည့်နည်း": "ငွေဖြည့်ရန် 'ငွေဖြည့်ရန်' ခလုတ်ကို နှိပ်ပါ။ KBZ Pay သို့မဟုတ် Wave Pay ဖြင့် ငွေလွှဲပြီး ပြေစာတင်ပေးရပါမည်။",
+            "အကောင့်ပြဿနာ": "အကောင့်ပြဿနာများအတွက် Admin နှင့် တိုက်ရိုက် စကားပြောရန် 'မက်ဆေ့ချ်' ကဏ္ဍကို အသုံးပြုပါ။",
+            "ဝန်ဆောင်မှုများ": "ကျွန်ုပ်တို့ထံတွင် ဂိမ်းငွေဖြည့်ခြင်း၊ ဂိမ်းအကောင့်အရောင်းအဝယ်ပြုလုပ်ခြင်း နှင့် Telegram Premium ဝန်ဆောင်မှုများ ရရှိနိုင်ပါသည်။",
+            "Spin Wheel အကြောင်း": "Spin Wheel လှည့်ရန် Spin Token လိုအပ်ပါသည်။ Token များကို ဝယ်ယူမှုများမှ တစ်ဆင့် ရရှိနိုင်ပါသည်။"
+        };
+        function quickReply(text) { displayMessage(text, 'user'); setTimeout(() => { const reply = responses[text] || "တောင်းပန်ပါတယ်၊ အဲဒါကို ကျွန်တော် မသိပါဘူး။ Admin ကို မေးကြည့်ပေးပါ။"; displayMessage(reply, 'bot'); }, 500); }
+        function sendMessage() { const input = document.getElementById('msg-input'); const text = input.value.trim(); if (!text) return; input.value = ""; displayMessage(text, 'user'); setTimeout(() => { displayMessage("နားလည်ပါပြီ။ ခေတ္တစောင့်ပေးပါ။ Admin မှ ပြန်လည်ဖြေကြားပေးပါလိမ့်မည်။", 'bot'); }, 800); }
+        function displayMessage(text, sender) { const chatBox = document.getElementById('chat-box'); const div = document.createElement('div'); div.className = `message msg-${sender}`; div.innerText = text; chatBox.appendChild(div); chatBox.scrollTop = chatBox.scrollHeight; }
+    </script>
+</body>
+</html>

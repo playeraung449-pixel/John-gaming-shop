@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="my">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>အခြားဝန်ဆောင်မှုများ - John Gaming Shop</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        :root { --bg-color: #0a0f1e; --glass-bg: rgba(255, 255, 255, 0.05); --neon-cyan: #00ffe7; --neon-blue: #3b82f6; --text-color: #ffffff; }
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Pyidaungsu', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        body { background: radial-gradient(circle at 20% 30%, #0a0f1e, #020408); min-height: 100vh; color: var(--text-color); padding-bottom: 20px; }
+        header { background: var(--glass-bg); backdrop-filter: blur(10px); padding: 20px; display: flex; align-items: center; gap: 15px; border-bottom: 1px solid rgba(0, 255, 231, 0.2); position: sticky; top: 0; z-index: 100; }
+        .back-btn { color: white; text-decoration: none; font-size: 20px; }
+        .content { padding: 20px; }
+        .service-card { background: var(--glass-bg); border: 1px solid rgba(255,255,255,0.1); border-radius: 20px; padding: 20px; margin-bottom: 20px; }
+        .service-title { font-size: 18px; color: var(--neon-cyan); margin-bottom: 15px; display: flex; align-items: center; gap: 10px; }
+        .option-grid { display: grid; grid-template-columns: 1fr; gap: 10px; }
+        .option { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 15px; padding: 15px; cursor: pointer; display: flex; justify-content: space-between; transition: 0.3s; }
+        .option:hover { border-color: var(--neon-cyan); }
+        .option.selected { border-color: var(--neon-cyan); background: rgba(0, 255, 231, 0.1); }
+        .input-group { margin-top: 20px; }
+        input { width: 100%; padding: 12px 20px; background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 40px; color: white; outline: none; margin-top: 10px; }
+        .buy-btn { width: 100%; padding: 15px; background: linear-gradient(90deg, var(--neon-cyan), var(--neon-blue)); border: none; border-radius: 40px; color: #000; font-weight: bold; cursor: pointer; margin-top: 20px; }
+        .toast { position: fixed; top: 20px; right: 20px; background: var(--glass-bg); backdrop-filter: blur(10px); border: 1px solid var(--neon-cyan); padding: 15px 25px; border-radius: 10px; display: none; z-index: 2000; }
+    </style>
+</head>
+<body>
+    <header><a href="index.html" class="back-btn"><i class="fas fa-arrow-left"></i></a><h2>အခြားဝန်ဆောင်မှုများ</h2></header>
+    <div class="content">
+        <div class="service-card">
+            <div class="service-title"><i class="fab fa-telegram"></i> Telegram Premium</div>
+            <div class="option-grid">
+                <div class="option" onclick="select(this, 55000, '3 Months')"><span>3 လစာ</span><span>55,000 Ks</span></div>
+                <div class="option" onclick="select(this, 78000, '6 Months')"><span>6 လစာ</span><span>78,000 Ks</span></div>
+                <div class="option" onclick="select(this, 145000, '12 Months')"><span>12 လစာ</span><span>145,000 Ks</span></div>
+            </div>
+            <div class="input-group"><label>Telegram Username</label><input type="text" id="username" placeholder="@username"></div>
+            <button class="buy-btn" onclick="buy()">ဝယ်ယူမည်</button>
+        </div>
+    </div>
+    <div id="toast" class="toast"></div>
+    <script>
+        const supabaseUrl = 'https://obtfamhkvsodmrfjetsm.supabase.co';
+        const supabaseKey = 'sb_publishable_KpHT5E9yRy9y1jkDZN9RAg_WHBJMDj9';
+        const supabase = supabase.createClient(supabaseUrl, supabaseKey);
+        let selected = null;
+        function select(el, price, name) {
+            document.querySelectorAll('.option').forEach(o => o.classList.remove('selected'));
+            el.classList.add('selected');
+            selected = { price, name };
+        }
+        async function buy() {
+            const user = document.getElementById('username').value;
+            if (!selected || !user) { showToast("အချက်အလက်များ ပြည့်စုံစွာ ဖြည့်ပါ။"); return; }
+            const { data: { session } } = await supabase.auth.getSession();
+            const { data: userData } = await supabase.from('users').select('*').eq('id', session.user.id).single();
+            if (userData.balance < selected.price) { showToast("လက်ကျန်ငွေ မလုံလောက်ပါ။"); return; }
+            await supabase.from('users').update({ balance: userData.balance - selected.price }).eq('id', userData.id);
+            await supabase.from('orders').insert({ user_id: userData.id, product_name: `TG Premium - ${selected.name}`, price: selected.price, status: 'pending' });
+            const botToken = "8653967411:AAFfw-0pR8RysuPD6aoSlZ7w7d8XNNs8l_A";
+            const chatId = "6427719618";
+            fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ chat_id: chatId, text: `💎 Telegram Premium Order!\nType: ${selected.name}\nUser: ${userData.email}\nTG: ${user}` }) });
+            showToast("ဝယ်ယူမှု အောင်မြင်ပါသည်။");
+        }
+        function showToast(msg) { const t = document.getElementById('toast'); t.innerText = msg; t.style.display = 'block'; setTimeout(() => t.style.display = 'none', 3000); }
+    </script>
+</body>
+</html>

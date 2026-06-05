@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="my">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Top Buyer - John Gaming Shop</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        :root { --bg-color: #0a0f1e; --glass-bg: rgba(255, 255, 255, 0.05); --neon-cyan: #00ffe7; --neon-blue: #3b82f6; --text-color: #ffffff; }
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Pyidaungsu', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        body { background: radial-gradient(circle at 20% 30%, #0a0f1e, #020408); min-height: 100vh; color: var(--text-color); padding-bottom: 20px; }
+        header { background: var(--glass-bg); backdrop-filter: blur(10px); padding: 20px; display: flex; align-items: center; gap: 15px; border-bottom: 1px solid rgba(0, 255, 231, 0.2); position: sticky; top: 0; z-index: 100; }
+        .back-btn { color: white; text-decoration: none; font-size: 20px; }
+        .leaderboard { padding: 20px; }
+        .buyer-card { background: var(--glass-bg); border: 1px solid rgba(255,255,255,0.1); border-radius: 20px; padding: 15px 20px; margin-bottom: 10px; display: flex; align-items: center; gap: 15px; }
+        .rank { width: 35px; height: 35px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; background: rgba(255,255,255,0.1); }
+        .rank-1 { background: linear-gradient(45deg, #ffd700, #ff8c00); color: #000; box-shadow: 0 0 15px rgba(255, 215, 0, 0.5); }
+        .rank-2 { background: linear-gradient(45deg, #c0c0c0, #808080); color: #000; }
+        .rank-3 { background: linear-gradient(45deg, #cd7f32, #8b4513); color: #000; }
+        .buyer-info { flex: 1; }
+        .buyer-name { font-weight: bold; }
+        .spent-amount { color: var(--neon-cyan); font-size: 14px; }
+    </style>
+</head>
+<body>
+    <header><a href="index.html" class="back-btn"><i class="fas fa-arrow-left"></i></a><h2>Top Buyer List</h2></header>
+    <div class="leaderboard" id="leaderboard">
+        <!-- Buyers list -->
+    </div>
+    <script>
+        const supabaseUrl = 'https://obtfamhkvsodmrfjetsm.supabase.co';
+        const supabaseKey = 'sb_publishable_KpHT5E9yRy9y1jkDZN9RAg_WHBJMDj9';
+        const supabase = supabase.createClient(supabaseUrl, supabaseKey);
+        async function loadTopBuyers() {
+            const { data: orders } = await supabase.from('orders').select('user_id, price').eq('status', 'approved');
+            const userSpending = {};
+            orders.forEach(o => { userSpending[o.user_id] = (userSpending[o.user_id] || 0) + o.price; });
+            const sortedUsers = Object.entries(userSpending).sort((a, b) => b[1] - a[1]).slice(0, 20);
+            const { data: users } = await supabase.from('users').select('id, name');
+            const userMap = {}; users.forEach(u => userMap[u.id] = u.name);
+            const list = document.getElementById('leaderboard');
+            sortedUsers.forEach(([uid, amount], index) => {
+                const rank = index + 1;
+                const card = document.createElement('div');
+                card.className = 'buyer-card';
+                card.innerHTML = `<div class="rank rank-${rank <= 3 ? rank : ''}">#${rank}</div><div class="buyer-info"><div class="buyer-name">${userMap[uid] || 'အမည်မသိ'}</div><div class="spent-amount">${amount.toLocaleString()} Ks</div></div>`;
+                list.appendChild(card);
+            });
+        }
+        window.onload = loadTopBuyers;
+    </script>
+</body>
+</html>
