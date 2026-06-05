@@ -142,7 +142,7 @@
             <label>စကားဝှက်</label>
             <input type="password" id="password" placeholder="••••••••">
         </div>
-        <div id="error-msg" class="error-msg">အီးမေးလ် သို့မဟုတ် စကားဝှက် မှားယွင်းနေပါသည်။</div>
+        <div id="error-msg" class="error-msg"></div>
         <div id="loader" class="loader"></div>
         <button class="btn" onclick="login()">အကောင့်ဝင်ရန်</button>
         <div class="link">
@@ -161,27 +161,44 @@
             const errorMsg = document.getElementById('error-msg');
             const loader = document.getElementById('loader');
 
+            // Clear previous error
+            errorMsg.style.display = 'none';
+            errorMsg.innerText = '';
+
+            // Validate inputs
             if (!email || !password) {
-                errorMsg.innerText = "ကျေးဇူးပြု၍ အချက်အလက်များ အပြည့်အစုံဖြည့်ပါ။";
+                errorMsg.innerText = "ကျေးဇူးပြု၍ အီးမေးလ်နှင့် စကားဝှက် ထည့်ပါ။";
                 errorMsg.style.display = 'block';
                 return;
             }
 
-            errorMsg.style.display = 'none';
             loader.style.display = 'block';
 
-            const { data, error } = await supabase.auth.signInWithPassword({
-                email: email,
-                password: password,
-            });
+            try {
+                const { data, error } = await supabase.auth.signInWithPassword({
+                    email: email,
+                    password: password,
+                });
 
-            loader.style.display = 'none';
+                loader.style.display = 'none';
 
-            if (error) {
-                errorMsg.innerText = "အီးမေးလ် သို့မဟုတ် စကားဝှက် မှားယွင်းနေပါသည်။";
+                if (error) {
+                    errorMsg.innerText = "အီးမေးလ် သို့မဟုတ် စကားဝှက် မှားနေပါသည်။";
+                    errorMsg.style.display = 'block';
+                    return;
+                }
+
+                // ✅ Login success - redirect based on role or email
+                if (email === 'playeraung449@gmail.com') {
+                    window.location.href = 'admin-panel.html';
+                } else {
+                    window.location.href = 'home.html';
+                }
+
+            } catch (err) {
+                loader.style.display = 'none';
+                errorMsg.innerText = "အကောင့်ဝင်ရန် အဆက်အသွယ် ပျက်နေပါသည်။";
                 errorMsg.style.display = 'block';
-            } else {
-                window.location.href = 'home.html';
             }
         }
 
@@ -189,7 +206,12 @@
         window.onload = async () => {
             const { data: { session } } = await supabase.auth.getSession();
             if (session) {
-                window.location.href = 'home.html';
+                const email = session.user.email;
+                if (email === 'playeraung449@gmail.com') {
+                    window.location.href = 'admin-panel.html';
+                } else {
+                    window.location.href = 'home.html';
+                }
             }
         };
     </script>
