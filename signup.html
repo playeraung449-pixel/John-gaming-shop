@@ -64,7 +64,7 @@
 
         input {
             width: 100%;
-            padding: 10px 20px;
+            padding: 12px 20px;
             background: rgba(255, 255, 255, 0.05);
             border: 1px solid rgba(255, 255, 255, 0.1);
             border-radius: 40px;
@@ -147,14 +147,14 @@
             <input type="email" id="email" placeholder="example@gmail.com">
         </div>
         <div class="input-group">
-            <label>စကားဝှက်</label>
+            <label>စကားဝှက် (အနည်းဆုံး 6 လုံး)</label>
             <input type="password" id="password" placeholder="••••••••">
         </div>
         <div class="input-group">
             <label>စကားဝှက်ကို ထပ်မံရိုက်ပါ</label>
             <input type="password" id="confirm-password" placeholder="••••••••">
         </div>
-        <div id="error-msg" class="error-msg">အချက်အလက်များ မှားယွင်းနေပါသည်။</div>
+        <div id="error-msg" class="error-msg"></div>
         <div id="loader" class="loader"></div>
         <button class="btn" onclick="signup()">အကောင့်ဖွင့်ရန်</button>
         <div class="link">
@@ -168,16 +168,25 @@
         const supabase = supabase.createClient(supabaseUrl, supabaseKey);
 
         async function signup() {
-            const name = document.getElementById('name').value;
-            const phone = document.getElementById('phone').value;
-            const email = document.getElementById('email').value;
+            const name = document.getElementById('name').value.trim();
+            const phone = document.getElementById('phone').value.trim();
+            const email = document.getElementById('email').value.trim();
             const password = document.getElementById('password').value;
             const confirmPassword = document.getElementById('confirm-password').value;
             const errorMsg = document.getElementById('error-msg');
             const loader = document.getElementById('loader');
 
+            errorMsg.style.display = 'none';
+            errorMsg.innerText = '';
+
             if (!name || !phone || !email || !password || !confirmPassword) {
                 errorMsg.innerText = "ကျေးဇူးပြု၍ အချက်အလက်များ အပြည့်အစုံဖြည့်ပါ။";
+                errorMsg.style.display = 'block';
+                return;
+            }
+
+            if (password.length < 6) {
+                errorMsg.innerText = "စကားဝှက်သည် အနည်းဆုံး 6 လုံးရှိရပါမည်။";
                 errorMsg.style.display = 'block';
                 return;
             }
@@ -188,28 +197,39 @@
                 return;
             }
 
-            errorMsg.style.display = 'none';
             loader.style.display = 'block';
 
-            const { data, error } = await supabase.auth.signUp({
-                email: email,
-                password: password,
-                options: {
-                    data: {
-                        name: name,
-                        phone: phone
+            try {
+                const { data, error } = await supabase.auth.signUp({
+                    email: email,
+                    password: password,
+                    options: {
+                        data: {
+                            name: name,
+                            phone: phone
+                        }
                     }
+                });
+
+                if (error) {
+                    loader.style.display = 'none';
+                    if (error.message.includes('User already registered')) {
+                        errorMsg.innerText = "ဒီအီးမေးလ်ဖြင့် အကောင့်ရှိပြီးသားပါ။";
+                    } else {
+                        errorMsg.innerText = error.message;
+                    }
+                    errorMsg.style.display = 'block';
+                    return;
                 }
-            });
 
-            loader.style.display = 'none';
+                // ✅ Signup success - redirect to home directly
+                loader.style.display = 'none';
+                window.location.href = 'index.html';
 
-            if (error) {
-                errorMsg.innerText = error.message;
+            } catch (err) {
+                loader.style.display = 'none';
+                errorMsg.innerText = "အကောင့်ဖွင့်ခြင်း မအောင်မြင်ပါ။ နောက်မှထပ်စမ်းပါ။";
                 errorMsg.style.display = 'block';
-            } else {
-                alert("အကောင့်ဖွင့်ခြင်း အောင်မြင်ပါသည်။ ကျေးဇူးပြု၍ အီးမေးလ်စစ်ဆေးပါ။");
-                window.location.href = 'login.html';
             }
         }
     </script>
